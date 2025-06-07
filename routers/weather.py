@@ -4,32 +4,40 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
 router = APIRouter()
 
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 @router.get("/weather")
-def get_weather(city: str = Query(..., description="城市名稱")):
+async def get_weather(lat: float = Query(...), lon: float = Query(...)):
     if not WEATHER_API_KEY:
-        raise HTTPException(status_code=500, detail="缺少天氣 API 金鑰")
+        raise HTTPException(status_code=500, detail="❌ 缺少天氣 API 金鑰")
 
-    url = (
-        f"https://api.openweathermap.org/data/2.5/weather"
-        f"?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=zh_tw"
-    )
     try:
-        response = requests.get(url)
-        data = response.json()
+        response = requests.get(
+            f"https://api.openweathermap.org/data/2.5/weather",
+            params={
+                "lat": lat,
+                "lon": lon,
+                "appid": WEATHER_API_KEY,
+                "units": "metric",
+                "lang": "zh_tw"
+            }
+        )
+        result = response.json()
+        print("🌦️ 天氣資料：", result)
 
-        if data.get("cod") != 200:
-            return {"error": "查不到此城市的天氣資料"}
+        if "main" not in result:
+            raise HTTPException(status_code=500, detail="❌ 無法取得天氣資料")
 
-        weather = data["weather"][0]["description"]
-        temp = data["main"]["temp"]
         return {
-            "city": city,
-            "temperature": f"{temp}°C",
-            "description": weather
+            "氣溫": f"{result['main']['temp']}℃",
+            "濕度": f"{result['main']['humidity']}%",
+            "風速": f"{result['wind']['speed']} m/s",
+            "天氣": result['weather'][0]['description']
         }
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"查詢天氣失敗：{e}")
+        print("🚨 天氣 API 錯誤：", e)
+        raise HTTPException(status_code=500, detail="❌ 天氣 API 查詢失敗")
