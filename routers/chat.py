@@ -16,6 +16,16 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     messages: list[Message]
 
+# 角色引導提示（只會在第一輪插入）
+INTRO_PROMPT = {
+    "role": "user",
+    "parts": [{
+        "text": (
+            "請依據上述資料，建議今日的灌溉用水量與適合灌溉的時段，並簡要說明原因。"
+        )
+    }]
+}
+
 @router.post("/chat")
 async def chat(chat: ChatRequest):
     if not GEMINI_API_KEY:
@@ -24,10 +34,15 @@ async def chat(chat: ChatRequest):
     if not chat.messages or len(chat.messages) == 0:
         raise HTTPException(status_code=400, detail="❌ 請提供至少一筆聊天訊息")
 
-    # 組成 Gemini API 格式
-    formatted = [
+    # 自動加入角色提示（避免重複加）
+    first_message = chat.messages[0].message.lower()
+    has_intro = "儲蓄" in first_message or "消費人格" in first_message
+
+    formatted = (
+        [] if has_intro else [INTRO_PROMPT]
+    ) + [
         {
-            "role": "user",
+            "role": msg.role,
             "parts": [{ "text": msg.message }]
         } for msg in chat.messages
     ]
@@ -39,6 +54,7 @@ async def chat(chat: ChatRequest):
             json={ "contents": formatted }
         )
         result = response.json()
+
         if "candidates" not in result:
             return {
                 "error": result.get("error", {}),
