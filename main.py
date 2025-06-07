@@ -11,14 +11,15 @@ model = genai.GenerativeModel("gemini-pro")
 
 @app.post("/chat")
 async def chat(request: Request):
-    body = await request.json()
-    message = body.get("message", "")
-    
-    if not message:
-        return {"error": "No message provided"}
-    
     try:
+        data = await request.json()
+        message = data.get("message")
+        if not message:
+            return {"error": "請提供 message 欄位"}
+
         response = model.generate_content(message)
         return {"response": response.text}
+    
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"解析失敗，請提供正確的 JSON 結構：{str(e)}"}
+
