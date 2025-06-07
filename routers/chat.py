@@ -55,11 +55,11 @@ async def chat(chat: ChatRequest):
         )
         result = response.json()
 
-        if "candidates" not in result:
-            return {
-                "error": result.get("error", {}),
-                "message": "Gemini 回傳錯誤格式，請確認 API key 或傳送內容。"
-            }
+        if "candidates" not in result or not result["candidates"]:
+            return {"message": "Gemini 回傳錯誤格式，請確認 API key 或傳送內容。"}
+
+        reply = result["candidates"][0]["content"]["parts"][0]["text"]
+        return { "reply": reply }
 
         reply = result["candidates"][0]["content"]["parts"][0]["text"]
         return { "reply": reply }
