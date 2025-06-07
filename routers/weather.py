@@ -16,7 +16,7 @@ async def get_weather(lat: float = Query(...), lon: float = Query(...)):
 
     try:
         response = requests.get(
-            "https://api.openweathermap.org/data/2.5/onecall",  # ✅ 使用 One Call API v2.5
+            "https://api.openweathermap.org/data/3.0/onecall",  # ✅ v3.0 API endpoint
             params={
                 "lat": lat,
                 "lon": lon,
@@ -27,13 +27,12 @@ async def get_weather(lat: float = Query(...), lon: float = Query(...)):
             }
         )
         result = response.json()
-        print("🌦️ One Call 天氣資料：", result)
+        print("🌦️ v3.0 天氣資料：", result)
 
         if "current" not in result:
             raise HTTPException(status_code=500, detail="❌ 無法取得天氣資料")
 
-        # 安全地取得降雨機率（pop）
-        rain_prob = 0
+        # 降雨機率從 hourly[0]['pop'] 拿
         try:
             rain_prob = int(result.get("hourly", [{}])[0].get("pop", 0) * 100)
         except:
@@ -48,5 +47,5 @@ async def get_weather(lat: float = Query(...), lon: float = Query(...)):
         }
 
     except Exception as e:
-        print("🚨 天氣 API 錯誤：", e)
+        print("🚨 v3.0 天氣 API 錯誤：", e)
         raise HTTPException(status_code=500, detail="❌ 天氣 API 查詢失敗")
