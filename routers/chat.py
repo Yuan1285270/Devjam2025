@@ -27,7 +27,7 @@ async def chat(chat: ChatRequest):
     # 組成 Gemini API 格式
     formatted = [
         {
-            "role": msg.role,
+            "role": "user",
             "parts": [{ "text": msg.message }]
         } for msg in chat.messages
     ]
